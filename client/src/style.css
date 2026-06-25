@@ -1,0 +1,92 @@
+/* Minimal styling — placeholder look. The room is just CSS so it's easy to
+   restyle later. Avatars are circles positioned with transform. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0f1115;
+  color: #e7e9ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* ---- Join screen ---- */
+#join { text-align: center; }
+.join-card {
+  background: #1a1e27;
+  padding: 32px 40px;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+.join-card h1 { margin: 0 0 4px; font-size: 24px; }
+.join-card p { color: #9aa3b2; margin: 4px 0; }
+.join-card input {
+  margin-top: 16px;
+  padding: 10px 12px;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #2c3340;
+  background: #11141b;
+  color: #fff;
+  font-size: 15px;
+}
+.join-card .hint { font-size: 12px; margin-top: 14px; }
+
+button {
+  margin-top: 14px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #4f7cff;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- Room ---- */
+#app { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+#room {
+  position: relative;
+  background: #161a22;
+  border: 1px solid #2c3340;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.avatar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.05s linear;
+  pointer-events: none;
+}
+.avatar .dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #6c7689;
+  border: 2px solid #aab3c5;
+}
+.avatar.me .dot { background: #4f7cff; border-color: #9db4ff; }
+.avatar .label {
+  margin-top: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+/* ---- Bottom bar ---- */
+#bar { display: flex; align-items: center; gap: 16px; }
+#status { color: #9aa3b2; font-size: 14px; }
+#mute-btn.active { background: #d24b4b; }

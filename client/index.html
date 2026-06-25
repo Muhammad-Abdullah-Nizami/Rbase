@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Proximity Room</title>
+  </head>
+  <body>
+    <div id="join">
+      <div class="join-card">
+        <h1>Proximity Room</h1>
+        <p>Walk close to people to hear them.</p>
+        <input id="name" placeholder="Your name" maxlength="24" autocomplete="off" />
+        <button id="join-btn">Join Room</button>
+        <p class="hint">Move with arrow keys or WASD.</p>
+      </div>
+    </div>
+
+    <div id="app" hidden>
+      <div id="room"></div>
+      <div id="bar">
+        <span id="status">connecting…</span>
+        <button id="mute-btn">Mute</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
