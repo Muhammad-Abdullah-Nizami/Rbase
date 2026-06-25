@@ -1,12 +1,17 @@
 {
-  "name": "proximity-room-client",
+  "name": "@proximity/client",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview --port 4173",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@proximity/shared": "*"
   },
   "devDependencies": {
     "vite": "^6.0.7"

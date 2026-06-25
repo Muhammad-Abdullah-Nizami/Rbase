@@ -9,6 +9,8 @@ node_modules/
 # Build output
 dist/
 build/
+*.tsbuildinfo
+.vite/
 
 # Logs / OS cruft
 *.log

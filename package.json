@@ -1,0 +1,29 @@
+{
+  "name": "proximity-room",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Proximity audio chat — a 2D room where you hear people louder the closer you stand.",
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:shared": "npm run build -w @proximity/shared",
+    "build:server": "npm run build -w @proximity/server",
+    "build:client": "npm run build -w @proximity/client",
+    "build": "npm run build:shared && npm run build:server && npm run build:client",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:server": "npm run dev -w @proximity/server",
+    "dev:client": "npm run dev -w @proximity/client"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
