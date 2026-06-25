@@ -16,8 +16,12 @@ export const MOVE_SPEED = 4;
 /** The camera window. The world (from the map) is larger and scrolls under it. */
 export const VIEWPORT: Size = { width: 900, height: 600 };
 
-/** Distance→volume curve, in world pixels (tuned for room-scale distances). */
-export const FALLOFF: FalloffConfig = { fullVolumeRadius: 160, silenceRadius: 700 };
+/**
+ * Distance→volume curve, in world pixels. `silenceRadius` is the audible range
+ * (≈ the circle on the map sketch): full volume within fullVolumeRadius, fading
+ * linearly to silent at silenceRadius.
+ */
+export const FALLOFF: FalloffConfig = { fullVolumeRadius: 150, silenceRadius: 460 };
 
 /**
  * Volume multiplier for each wall the line between two people crosses.

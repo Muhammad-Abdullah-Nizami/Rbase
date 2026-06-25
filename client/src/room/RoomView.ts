@@ -38,6 +38,7 @@ export class RoomView {
     viewportEl.append(this.layer);
 
     this.renderRoomLabels(world.rooms);
+    this.renderProps(world.props);
     this.renderWalls(world.walls);
 
     this.selfAvatar = this.createAvatar(model.self.name, true);
@@ -92,6 +93,23 @@ export class RoomView {
       element.className = 'room-label';
       element.textContent = room.name;
       element.style.transform = `translate(${room.at.x}px, ${room.at.y}px)`;
+      this.layer.append(element);
+    }
+  }
+
+  private renderProps(props: WorldMap['props']): void {
+    for (const prop of props) {
+      const element = document.createElement('div');
+      element.className = 'prop';
+      element.style.transform = `translate(${prop.x}px, ${prop.y}px)`;
+      element.style.width = `${prop.width}px`;
+      element.style.height = `${prop.height}px`;
+      if (prop.label) {
+        const label = document.createElement('span');
+        label.className = 'prop__label';
+        label.textContent = prop.label;
+        element.append(label);
+      }
       this.layer.append(element);
     }
   }

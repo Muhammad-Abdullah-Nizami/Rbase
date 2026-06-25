@@ -122,6 +122,24 @@ body {
   border: 1px solid #4a5365;
   border-radius: 3px;
 }
+.prop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2f3a;
+  border: 1px solid #3b4250;
+  border-radius: 10px;
+}
+.prop__label {
+  color: rgba(231, 233, 238, 0.35);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
 .room-label {
   position: absolute;
   top: 0;

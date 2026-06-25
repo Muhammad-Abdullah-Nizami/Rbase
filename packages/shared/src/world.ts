@@ -21,11 +21,27 @@ export const roomLabelSchema = z.object({
 });
 export type RoomLabel = z.infer<typeof roomLabelSchema>;
 
+/**
+ * A decorative object (e.g. a table). Props render but do NOT occlude audio or
+ * block movement — they are purely cosmetic, unlike walls.
+ */
+export const propSchema = z.object({
+  x: z.number().finite(),
+  y: z.number().finite(),
+  width: z.number().positive(),
+  height: z.number().positive(),
+  label: z.string().optional(),
+});
+export type Prop = z.infer<typeof propSchema>;
+
 export const worldMapSchema = z.object({
   width: z.number().positive(),
   height: z.number().positive(),
   spawn: vec2Schema,
+  /** Walls occlude audio AND block movement. Leave gaps to make doorways. */
   walls: z.array(rectSchema),
+  /** Cosmetic objects — no audio/movement effect. */
+  props: z.array(propSchema).default([]),
   rooms: z.array(roomLabelSchema).default([]),
 });
 export type WorldMap = z.infer<typeof worldMapSchema>;
