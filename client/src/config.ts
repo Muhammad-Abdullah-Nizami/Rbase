@@ -1,4 +1,4 @@
-import type { Bounds, FalloffConfig } from '@proximity/shared';
+import type { FalloffConfig, Size } from '@proximity/shared';
 
 /**
  * In production this is baked at build time from the Render env var. In dev it
@@ -10,12 +10,21 @@ export const SIGNALING_URL: string =
 
 export const ROOM_NAME = 'main';
 
-export const ROOM_BOUNDS: Bounds = { width: 800, height: 600 };
 export const AVATAR_SIZE = 32;
 export const MOVE_SPEED = 4;
 
-/** Distance→volume curve, in room pixels. */
-export const FALLOFF: FalloffConfig = { fullVolumeRadius: 90, silenceRadius: 340 };
+/** The camera window. The world (from the map) is larger and scrolls under it. */
+export const VIEWPORT: Size = { width: 900, height: 600 };
+
+/** Distance→volume curve, in world pixels (tuned for room-scale distances). */
+export const FALLOFF: FalloffConfig = { fullVolumeRadius: 160, silenceRadius: 700 };
+
+/**
+ * Volume multiplier for each wall the line between two people crosses.
+ * 0 = walls fully block sound, 1 = walls don't block at all. 0.12 ≈ a strong
+ * muffle (two walls ≈ near silence), while doorway gaps stay clear.
+ */
+export const OCCLUSION_PER_WALL = 0.12;
 
 /** Throttle for broadcasting our position (≈20 updates/sec). */
 export const POSITION_SYNC_INTERVAL_MS = 50;

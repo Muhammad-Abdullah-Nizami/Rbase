@@ -96,13 +96,42 @@ body {
   background: var(--danger);
 }
 
-/* ---- Room ---- */
-.room {
+/* ---- Room / world ---- */
+.viewport {
   position: relative;
   overflow: hidden;
-  background: #161a22;
+  background: #11141b;
   border: 1px solid var(--panel-border);
   border-radius: 12px;
+}
+.world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+  background-color: #161a22;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 39px, rgba(255, 255, 255, 0.02) 39px 40px),
+    repeating-linear-gradient(90deg, transparent 0 39px, rgba(255, 255, 255, 0.02) 39px 40px);
+}
+.wall {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #39414f;
+  border: 1px solid #4a5365;
+  border-radius: 3px;
+}
+.room-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: rgba(231, 233, 238, 0.16);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  pointer-events: none;
+  user-select: none;
 }
 .avatar {
   position: absolute;

@@ -1,4 +1,4 @@
-import { clampToBounds, type Bounds } from '@proximity/shared';
+import { clampToBounds, rectsOverlap, type Bounds, type Rect, type Vec2 } from '@proximity/shared';
 import type { RoomModel } from './RoomModel';
 
 const MOVE_KEYS: Readonly<Record<string, { readonly dx: number; readonly dy: number }>> = {
@@ -17,9 +17,15 @@ export interface MovementControllerOptions {
   readonly bounds: Bounds;
   readonly avatarSize: number;
   readonly speed: number;
+  readonly walls: readonly Rect[];
 }
 
-/** Translates held movement keys into per-tick motion of the local avatar. */
+/**
+ * Translates held movement keys into per-tick motion of the local avatar,
+ * clamped to the world and blocked by walls. When a diagonal/colliding move is
+ * rejected, it retries each axis alone so you slide along walls instead of
+ * sticking.
+ */
 export class MovementController {
   private readonly pressed = new Set<string>();
 
@@ -61,15 +67,27 @@ export class MovementController {
     }
     if (dx === 0 && dy === 0) return false;
 
-    const { model, bounds, avatarSize, speed } = this.options;
-    const current = model.self.position;
-    const next = clampToBounds(
-      { x: current.x + dx * speed, y: current.y + dy * speed },
-      bounds,
-      avatarSize,
-    );
-    if (next.x === current.x && next.y === current.y) return false;
-    model.setSelfPosition(next);
+    const { bounds, avatarSize, speed, walls } = this.options;
+    const current = this.options.model.self.position;
+    const stepX = dx * speed;
+    const stepY = dy * speed;
+
+    const tryMove = (x: number, y: number): Vec2 | null => {
+      const clamped = clampToBounds({ x, y }, bounds, avatarSize);
+      const box: Rect = { x: clamped.x, y: clamped.y, width: avatarSize, height: avatarSize };
+      for (const wall of walls) {
+        if (rectsOverlap(box, wall)) return null;
+      }
+      return clamped;
+    };
+
+    const next =
+      tryMove(current.x + stepX, current.y + stepY) ?? // full move
+      tryMove(current.x + stepX, current.y) ?? // slide along a vertical wall
+      tryMove(current.x, current.y + stepY); // slide along a horizontal wall
+
+    if (!next || (next.x === current.x && next.y === current.y)) return false;
+    this.options.model.setSelfPosition(next);
     return true;
   }
 }

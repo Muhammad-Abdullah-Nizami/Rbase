@@ -3,10 +3,12 @@ import {
   AVATAR_SIZE,
   FALLOFF,
   MOVE_SPEED,
+  OCCLUSION_PER_WALL,
   POSITION_SYNC_INTERVAL_MS,
-  ROOM_BOUNDS,
   ROOM_NAME,
+  VIEWPORT,
 } from '../config';
+import { defaultMap } from '../world/map';
 import type { AudioEngine } from '../audio/AudioEngine';
 import { ProximityController } from '../audio/ProximityController';
 import { MeshController } from '../rtc/MeshController';
@@ -42,14 +44,11 @@ export class Application {
   private lastSyncAt = 0;
 
   constructor(private readonly deps: ApplicationDeps) {
-    this.model = new RoomModel(deps.name, {
-      x: ROOM_BOUNDS.width / 2,
-      y: ROOM_BOUNDS.height / 2,
-    });
+    this.model = new RoomModel(deps.name, { ...defaultMap.spawn });
 
-    const roomElement = document.createElement('div');
-    deps.root.append(roomElement);
-    this.view = new RoomView(roomElement, this.model, ROOM_BOUNDS);
+    const viewportElement = document.createElement('div');
+    deps.root.append(viewportElement);
+    this.view = new RoomView(viewportElement, this.model, defaultMap, VIEWPORT, AVATAR_SIZE);
 
     this.controlBar = new ControlBar();
     this.controlBar.mount(deps.root);
@@ -57,11 +56,18 @@ export class Application {
 
     this.movement = new MovementController({
       model: this.model,
-      bounds: ROOM_BOUNDS,
+      bounds: { width: defaultMap.width, height: defaultMap.height },
       avatarSize: AVATAR_SIZE,
       speed: MOVE_SPEED,
+      walls: defaultMap.walls,
     });
-    this.proximity = new ProximityController(this.model, deps.audioEngine, FALLOFF);
+    this.proximity = new ProximityController(
+      this.model,
+      deps.audioEngine,
+      FALLOFF,
+      defaultMap.walls,
+      OCCLUSION_PER_WALL,
+    );
 
     this.mesh = new MeshController({
       localStream: deps.localStream,
