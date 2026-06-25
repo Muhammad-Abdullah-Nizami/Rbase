@@ -10,6 +10,7 @@ export interface RemoteParticipant {
   readonly id: PeerId;
   name: string;
   position: Vec2;
+  muted: boolean;
 }
 
 interface RoomModelEvents extends Record<string, unknown> {
@@ -48,7 +49,7 @@ export class RoomModel extends TypedEventEmitter<RoomModelEvents> {
 
   addPeer(participant: { id: PeerId; name: string; position: Vec2 }): void {
     if (this.remote.has(participant.id)) return;
-    const remote: RemoteParticipant = { ...participant };
+    const remote: RemoteParticipant = { ...participant, muted: false };
     this.remote.set(remote.id, remote);
     this.emit('peer-added', remote);
   }
@@ -58,10 +59,11 @@ export class RoomModel extends TypedEventEmitter<RoomModelEvents> {
     this.emit('peer-removed', id);
   }
 
-  setPeerPosition(id: PeerId, position: Vec2): void {
+  setPeerPosition(id: PeerId, position: Vec2, muted = false): void {
     const peer = this.remote.get(id);
     if (!peer) return;
     peer.position = position;
+    peer.muted = muted;
     this.emit('peer-moved', peer);
   }
 

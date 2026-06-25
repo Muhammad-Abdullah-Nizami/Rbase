@@ -71,7 +71,8 @@ export class Application {
       bounds: { width: defaultMap.width, height: defaultMap.height },
       half: AVATAR_HALF,
       speed: MOVE_SPEED,
-      obstacles: defaultMap.walls,
+      // Walls AND furniture (props) block movement; only walls block audio.
+      obstacles: [...defaultMap.walls, ...defaultMap.props],
       seats: defaultMap.seats,
       seatReach: SEAT_REACH,
     });
@@ -132,7 +133,7 @@ export class Application {
     const pos = this.model.self.position;
     if (pos.x === this.lastSync.x && pos.y === this.lastSync.y) return;
     if (time - this.lastSyncAt < POSITION_SYNC_INTERVAL_MS) return;
-    this.deps.signaling.send({ type: 'move', position: pos });
+    this.deps.signaling.send({ type: 'move', position: pos, muted: this.muted });
     this.lastSync = { ...pos };
     this.lastSyncAt = time;
   }
@@ -169,7 +170,7 @@ export class Application {
         this.mesh.removePeer(message.id);
         break;
       case 'peer-moved':
-        this.model.setPeerPosition(message.id, message.position);
+        this.model.setPeerPosition(message.id, message.position, message.muted ?? false);
         break;
       case 'signal':
         this.mesh.handleSignal(message.from, message.payload);
@@ -180,5 +181,7 @@ export class Application {
   private setMuted(muted: boolean): void {
     this.muted = muted;
     for (const track of this.deps.localStream.getAudioTracks()) track.enabled = !muted;
+    // Broadcast immediately so peers see the mute even if we're standing still.
+    this.deps.signaling.send({ type: 'move', position: this.model.self.position, muted });
   }
 }

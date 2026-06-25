@@ -104,6 +104,15 @@ body {
 .name-tag .bars i { height: 11px; }
 .name-tag.speaking .swatch { display: none; }
 
+/* Muted indicator (mic-off) — replaces the swatch/bars when muted */
+.mute-ico { display: none; align-items: center; color: #b9685e; }
+.mute-ico svg { display: block; }
+.name-tag.muted .swatch,
+.name-tag.muted .bars { display: none; }
+.name-tag.muted .mute-ico { display: inline-flex; }
+.part-row.muted .bars { display: none; }
+.part-row.muted .mute-ico { display: inline-flex; }
+
 /* ---- Control bar ---- */
 .controlbar {
   position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);

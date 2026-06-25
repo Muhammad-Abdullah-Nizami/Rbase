@@ -23,6 +23,14 @@ function colorFor(id: string): { shirt: string; cap: string } {
   return PEER_PALETTE[hash % PEER_PALETTE.length]!;
 }
 
+const MUTE_SVG =
+  '<svg viewBox="0 0 16 18" width="11" height="12" aria-hidden="true">' +
+  '<rect x="5" y="1" width="6" height="9" rx="3" fill="currentColor"/>' +
+  '<path d="M2 8 a6 6 0 0 0 12 0" stroke="currentColor" stroke-width="2" fill="none"/>' +
+  '<rect x="7" y="14" width="2" height="3" fill="currentColor"/>' +
+  '<line x1="1" y1="2" x2="15" y2="16" stroke="currentColor" stroke-width="2"/>' +
+  '</svg>';
+
 function faceFrom(vx: number, vy: number): Facing {
   if (Math.abs(vy) > Math.abs(vx)) return vy < 0 ? 'up' : 'down';
   return vx < 0 ? 'left' : 'right';
@@ -37,6 +45,7 @@ interface EntityVis {
   walkT: number;
   moving: boolean;
   sitting: boolean;
+  muted: boolean;
   shirt: string;
   cap: string;
 }
@@ -154,20 +163,21 @@ export class CanvasRoomView {
   // --- entity presentation state derived from real positions ---
   private syncEntities(dt: number): void {
     const seen = new Set<string>(['self']);
-    this.updateVis('self', this.model.self.position, SELF_COLOR, dt);
+    this.updateVis('self', this.model.self.position, SELF_COLOR, dt, this.isMuted());
     for (const peer of this.model.peers()) {
       seen.add(peer.id);
-      this.updateVis(peer.id, peer.position, colorFor(peer.id), dt);
+      this.updateVis(peer.id, peer.position, colorFor(peer.id), dt, peer.muted);
     }
     for (const id of [...this.vis.keys()]) if (!seen.has(id)) this.vis.delete(id);
   }
 
-  private updateVis(id: string, pos: { x: number; y: number }, color: { shirt: string; cap: string }, dt: number): void {
+  private updateVis(id: string, pos: { x: number; y: number }, color: { shirt: string; cap: string }, dt: number, muted: boolean): void {
     let v = this.vis.get(id);
     if (!v) {
-      v = { x: pos.x, y: pos.y, prevX: pos.x, prevY: pos.y, facing: 'down', walkT: 0, moving: false, sitting: false, shirt: color.shirt, cap: color.cap };
+      v = { x: pos.x, y: pos.y, prevX: pos.x, prevY: pos.y, facing: 'down', walkT: 0, moving: false, sitting: false, muted, shirt: color.shirt, cap: color.cap };
       this.vis.set(id, v);
     }
+    v.muted = muted;
     const vx = pos.x - v.x;
     const vy = pos.y - v.y;
     v.prevX = v.x;
@@ -299,13 +309,17 @@ export class CanvasRoomView {
     let tag = this.tags.get(id);
     if (!tag) {
       tag = el('div', 'name-tag', this.overlay);
-      tag.innerHTML = '<span class="swatch"></span><span class="bars"><i></i><i></i><i></i></span><span class="who"></span>';
+      tag.innerHTML =
+        `<span class="swatch"></span><span class="mute-ico">${MUTE_SVG}</span>` +
+        '<span class="bars"><i></i><i></i><i></i></span><span class="who"></span>';
       this.tags.set(id, tag);
     }
-    const color = this.vis.get(id)?.shirt ?? '#4d7d8f';
-    (tag.querySelector('.swatch') as HTMLElement).style.background = color;
+    const vis = this.vis.get(id);
+    (tag.querySelector('.swatch') as HTMLElement).style.background = vis?.shirt ?? '#4d7d8f';
     (tag.querySelector('.who') as HTMLElement).textContent = name;
-    tag.classList.toggle('speaking', speaking);
+    const muted = vis?.muted ?? false;
+    tag.classList.toggle('muted', muted);
+    tag.classList.toggle('speaking', speaking && !muted);
     const sx = Math.round(pos.x - this.cam.x);
     const sy = Math.round(pos.y - this.cam.y);
     if (sx < -10 || sx > VIEW.width + 10 || sy < -20 || sy > VIEW.height + 10) {
@@ -318,15 +332,16 @@ export class CanvasRoomView {
   }
 
   private updateParticipants(selfSpeaking: boolean): void {
-    const entries: Array<{ id: string; name: string; color: string; speaking: boolean }> = [
-      { id: 'self', name: `${this.model.self.name} (you)`, color: SELF_COLOR.shirt, speaking: selfSpeaking },
+    const entries: Array<{ id: string; name: string; color: string; speaking: boolean; muted: boolean }> = [
+      { id: 'self', name: `${this.model.self.name} (you)`, color: SELF_COLOR.shirt, speaking: selfSpeaking, muted: this.isMuted() },
     ];
     for (const peer of this.model.peers()) {
       entries.push({
         id: peer.id,
         name: peer.name,
         color: colorFor(peer.id).shirt,
-        speaking: this.audio.getLevel(peer.id) > SPEAKING_THRESHOLD,
+        speaking: !peer.muted && this.audio.getLevel(peer.id) > SPEAKING_THRESHOLD,
+        muted: peer.muted,
       });
     }
     this.peopleCount.textContent = String(entries.length);
@@ -337,11 +352,14 @@ export class CanvasRoomView {
       let row = this.rows.get(entry.id);
       if (!row) {
         row = el('div', 'part-row', this.participantsList);
-        row.innerHTML = '<span class="swatch"></span><span class="who"></span><span class="bars"><i></i><i></i><i></i></span>';
+        row.innerHTML =
+          `<span class="swatch"></span><span class="who"></span><span class="mute-ico">${MUTE_SVG}</span>` +
+          '<span class="bars"><i></i><i></i><i></i></span>';
         this.rows.set(entry.id, row);
       }
       (row.querySelector('.swatch') as HTMLElement).style.background = entry.color;
       (row.querySelector('.who') as HTMLElement).textContent = entry.name;
+      row.classList.toggle('muted', entry.muted);
       row.classList.toggle('speaking', entry.speaking);
     }
     for (const [id, row] of this.rows) {

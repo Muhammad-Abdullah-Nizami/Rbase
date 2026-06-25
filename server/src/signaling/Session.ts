@@ -85,7 +85,7 @@ export class Session {
     if (!this.room) return;
     this.peer.moveTo(message.position);
     this.room.broadcast(
-      { type: 'peer-moved', id: this.peer.id, position: message.position },
+      { type: 'peer-moved', id: this.peer.id, position: message.position, muted: message.muted ?? false },
       { except: this.peer.id },
     );
   }

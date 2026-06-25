@@ -77,6 +77,7 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('move'),
     position: vec2Schema,
+    muted: z.boolean().optional(),
   }),
   z.object({
     type: z.literal('signal'),
@@ -99,7 +100,7 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('peer-joined'), peer: peerSnapshotSchema }),
   z.object({ type: z.literal('peer-left'), id: peerIdSchema }),
-  z.object({ type: z.literal('peer-moved'), id: peerIdSchema, position: vec2Schema }),
+  z.object({ type: z.literal('peer-moved'), id: peerIdSchema, position: vec2Schema, muted: z.boolean().optional() }),
   z.object({ type: z.literal('signal'), from: peerIdSchema, payload: signalPayloadSchema }),
 ]);
 export type ServerMessage = z.infer<typeof serverMessageSchema>;

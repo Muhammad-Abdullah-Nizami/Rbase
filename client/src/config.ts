@@ -26,10 +26,10 @@ export const MOVE_SPEED = 0.066;
 export const SEAT_REACH = 18;
 
 /** Distance→volume curve, in world units. silenceRadius is the audible range. */
-export const FALLOFF: FalloffConfig = { fullVolumeRadius: 26, silenceRadius: 70 };
+export const FALLOFF: FalloffConfig = { fullVolumeRadius: 52, silenceRadius: 140 };
 
-/** Volume multiplier per wall the line-of-sight crosses (0 = blocked, 1 = none). */
-export const OCCLUSION_PER_WALL = 0.12;
+/** Volume multiplier per wall the line-of-sight crosses. 0 = walls fully block. */
+export const OCCLUSION_PER_WALL = 0;
 
 /** Normalized mic/stream level above which someone counts as "speaking". */
 export const SPEAKING_THRESHOLD = 0.08;
