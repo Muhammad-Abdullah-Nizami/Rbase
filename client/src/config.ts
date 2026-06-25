@@ -10,25 +10,29 @@ export const SIGNALING_URL: string =
 
 export const ROOM_NAME = 'main';
 
-export const AVATAR_SIZE = 32;
-export const MOVE_SPEED = 4;
+/** Canvas internal resolution (the visible slice of the world). */
+export const VIEW: Size = { width: 160, height: 100 };
 
-/** The camera window. The world (from the map) is larger and scrolls under it. */
-export const VIEWPORT: Size = { width: 900, height: 600 };
+/** Display scale: each world pixel becomes SCALE screen pixels (crisp pixel art). */
+export const SCALE = 6.25;
 
-/**
- * Distance→volume curve, in world pixels. `silenceRadius` is the audible range
- * (≈ the circle on the map sketch): full volume within fullVolumeRadius, fading
- * linearly to silent at silenceRadius.
- */
-export const FALLOFF: FalloffConfig = { fullVolumeRadius: 150, silenceRadius: 460 };
+/** Avatar collision half-extents (roughly the sprite's feet footprint). */
+export const AVATAR_HALF = { x: 5, y: 4 };
 
-/**
- * Volume multiplier for each wall the line between two people crosses.
- * 0 = walls fully block sound, 1 = walls don't block at all. 0.12 ≈ a strong
- * muffle (two walls ≈ near silence), while doorway gaps stay clear.
- */
+/** Movement speed in world units per millisecond (frame-rate independent). */
+export const MOVE_SPEED = 0.066;
+
+/** How close (world units) you must be to a seat to sit. */
+export const SEAT_REACH = 18;
+
+/** Distance→volume curve, in world units. silenceRadius is the audible range. */
+export const FALLOFF: FalloffConfig = { fullVolumeRadius: 26, silenceRadius: 70 };
+
+/** Volume multiplier per wall the line-of-sight crosses (0 = blocked, 1 = none). */
 export const OCCLUSION_PER_WALL = 0.12;
+
+/** Normalized mic/stream level above which someone counts as "speaking". */
+export const SPEAKING_THRESHOLD = 0.08;
 
 /** Throttle for broadcasting our position (≈20 updates/sec). */
 export const POSITION_SYNC_INTERVAL_MS = 50;

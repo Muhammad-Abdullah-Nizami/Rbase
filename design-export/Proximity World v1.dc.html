@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Nunito', sans-serif;
+    background:
+      radial-gradient(120% 120% at 50% 0%, #3a2c20 0%, #271d15 55%, #1c140e 100%);
+  }
+  @keyframes bob { 0%,100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+</style>
+</helmet>
+<div style="display:flex; flex-direction:column; align-items:center; gap:18px; padding:40px;">
+
+  <div style="position:relative; width:1000px; height:625px; border-radius:14px; overflow:hidden;
+              box-shadow: 0 0 0 8px #4a3526, 0 0 0 11px #2e2017, 0 26px 60px rgba(0,0,0,0.55);">
+
+    <canvas ref="{{ setSceneCanvas }}" width="256" height="160"
+            style="position:absolute; inset:0; width:1000px; height:625px; image-rendering:pixelated; display:block;"></canvas>
+
+    <!-- ===================== IN-ROOM OVERLAYS ===================== -->
+    <div style="position:absolute; inset:0; display:{{ roomDisplay }};">
+
+      <!-- name tags -->
+      <div style="position:absolute; left:273px; top:372px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:3px; pointer-events:none;">
+        <div style="display:flex; align-items:center; gap:6px; background:#f7eedd; border:2px solid #4a3526; border-radius:7px; padding:2px 9px; font-family:'Pixelify Sans',sans-serif; font-size:15px; color:#4a3526; white-space:nowrap; box-shadow:0 2px 0 #4a3526;">
+          <span style="width:9px; height:9px; border-radius:2px; background:#4d7d8f; box-shadow:inset 0 -2px 0 rgba(0,0,0,0.2);"></span>{{ playerName }}
+        </div>
+      </div>
+
+      <div style="position:absolute; left:742px; top:344px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:3px; pointer-events:none;">
+        <div style="display:flex; align-items:center; gap:6px; background:#f7eedd; border:2px solid #4a3526; border-radius:7px; padding:2px 9px; font-family:'Pixelify Sans',sans-serif; font-size:15px; color:#4a3526; white-space:nowrap; box-shadow:0 2px 0 #4a3526;">
+          <span style="display:inline-flex; align-items:flex-end; gap:2px; height:11px;">
+            <span style="width:2px; height:11px; background:#7fa66a; transform-origin:bottom; animation:bob 0.7s ease-in-out infinite;"></span>
+            <span style="width:2px; height:11px; background:#7fa66a; transform-origin:bottom; animation:bob 0.7s ease-in-out infinite 0.18s;"></span>
+            <span style="width:2px; height:11px; background:#7fa66a; transform-origin:bottom; animation:bob 0.7s ease-in-out infinite 0.36s;"></span>
+          </span>Marlow
+        </div>
+      </div>
+
+      <div style="position:absolute; left:586px; top:470px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:3px; pointer-events:none;">
+        <div style="display:flex; align-items:center; gap:6px; background:#f7eedd; border:2px solid #4a3526; border-radius:7px; padding:2px 9px; font-family:'Pixelify Sans',sans-serif; font-size:15px; color:#4a3526; white-space:nowrap; box-shadow:0 2px 0 #4a3526;">
+          <span style="width:9px; height:9px; border-radius:2px; background:#cc8d86; box-shadow:inset 0 -2px 0 rgba(0,0,0,0.2);"></span>Sage
+        </div>
+      </div>
+
+      <!-- room tab (top-left) -->
+      <div style="position:absolute; left:18px; top:18px; display:flex; align-items:center; gap:9px; background:#f7eedd; border:3px solid #4a3526; border-radius:9px; padding:8px 14px; box-shadow:0 4px 0 #4a3526;">
+        <span style="width:11px; height:11px; border-radius:50%; background:#7fa66a; box-shadow:0 0 0 3px rgba(127,166,106,0.3);"></span>
+        <span style="font-family:'Pixelify Sans',sans-serif; font-size:20px; color:#4a3526; letter-spacing:0.5px;">{{ roomName }}</span>
+      </div>
+
+      <!-- participants panel (top-right) -->
+      <div style="position:absolute; right:18px; top:18px; width:208px; background:#f7eedd; border:3px solid #4a3526; border-radius:10px; box-shadow:0 4px 0 #4a3526; overflow:hidden;">
+        <div style="padding:8px 12px; background:#e9d9b6; border-bottom:2px solid #c9b894; font-family:'Pixelify Sans',sans-serif; font-size:14px; letter-spacing:1px; color:#6f4527;">IN THIS ROOM · {{ peopleCount }}</div>
+        <div style="display:flex; flex-direction:column; padding:6px;">
+          <sc-for list="{{ participants }}" as="p" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:9px; padding:6px 6px; border-radius:6px;">
+              <span style="width:16px; height:16px; border-radius:4px; background:{{ p.color }}; box-shadow:inset 0 -3px 0 rgba(0,0,0,0.22); flex:none;"></span>
+              <span style="flex:1; font-family:'Nunito',sans-serif; font-weight:700; font-size:14px; color:#4a3526;">{{ p.name }}</span>
+              <sc-if value="{{ p.speaking }}" hint-placeholder-val="{{ true }}">
+                <span style="display:inline-flex; align-items:flex-end; gap:2px; height:13px;">
+                  <span style="width:2px; height:13px; background:#7fa66a; transform-origin:bottom; animation:bob 0.7s ease-in-out infinite;"></span>
+                  <span style="width:2px; height:13px; background:#7fa66a; transform-origin:bottom; animation:bob 0.7s ease-in-out infinite 0.2s;"></span>
+                  <span style="width:2px; height:13px; background:#7fa66a; transform-origin:bottom; animation:bob 0.7s ease-in-out infinite 0.4s;"></span>
+                </span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- movement hint (bottom-left) -->
+      <div style="position:absolute; left:18px; bottom:84px; display:flex; align-items:center; gap:8px; background:rgba(46,32,23,0.72); border-radius:8px; padding:7px 12px; font-family:'Pixelify Sans',sans-serif; font-size:14px; color:#f0e3c8; letter-spacing:0.5px;">
+        <span style="border:2px solid #c9b894; border-radius:4px; padding:0 6px;">WASD</span>
+        <span style="opacity:0.8;">move around · get close to talk</span>
+      </div>
+
+      <!-- control bar (bottom-center) -->
+      <div style="position:absolute; left:50%; bottom:18px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; background:#f7eedd; border:3px solid #4a3526; border-radius:12px; padding:9px 12px; box-shadow:0 5px 0 #4a3526, 0 12px 24px rgba(0,0,0,0.35);">
+        <div style="display:flex; align-items:center; gap:8px; padding:0 8px;">
+          <span style="width:10px; height:10px; border-radius:50%; background:#7fa66a;"></span>
+          <span style="font-family:'Pixelify Sans',sans-serif; font-size:15px; color:#6f4527;">{{ statusText }}</span>
+        </div>
+        <div style="width:2px; height:30px; background:#d8c7a3;"></div>
+        <button type="button" onClick="{{ onToggleMute }}"
+                style="display:flex; align-items:center; gap:9px; border:0; cursor:pointer; padding:11px 20px; border-radius:9px; font-family:'Pixelify Sans',sans-serif; font-size:18px; color:#fff8ec; letter-spacing:0.5px; background:{{ micBg }}; box-shadow:0 4px 0 {{ micEdge }};">
+          <svg width="16" height="18" viewBox="0 0 16 18" fill="none" style="display:block;">
+            <rect x="5" y="1" width="6" height="9" rx="3" fill="#fff8ec"/>
+            <path d="M2 8 a6 6 0 0 0 12 0" stroke="#fff8ec" stroke-width="2" fill="none"/>
+            <rect x="7" y="14" width="2" height="3" fill="#fff8ec"/>
+            <sc-if value="{{ muted }}" hint-placeholder-val="{{ true }}"><line x1="1" y1="2" x2="15" y2="16" stroke="#fff8ec" stroke-width="2"/></sc-if>
+          </svg>
+          {{ micLabel }}
+        </button>
+        <button type="button" onClick="{{ onLeave }}"
+                style="border:3px solid #b9685e; cursor:pointer; padding:9px 16px; border-radius:9px; font-family:'Pixelify Sans',sans-serif; font-size:16px; color:#b9685e; background:#fbf3e6; letter-spacing:0.5px;">LEAVE</button>
+      </div>
+    </div>
+
+    <!-- ===================== JOIN OVERLAY ===================== -->
+    <div style="position:absolute; inset:0; display:{{ joinDisplay }}; align-items:center; justify-content:center; background:rgba(38,27,19,0.55); backdrop-filter:blur(2px);">
+      <div style="width:392px; background:#f7eedd; border:4px solid #4a3526; border-radius:14px; box-shadow:0 8px 0 #4a3526, 0 22px 44px rgba(0,0,0,0.45); padding:30px 34px 28px; text-align:center; animation:floaty 5s ease-in-out infinite;">
+        <div style="font-family:'Pixelify Sans',sans-serif; font-weight:700; font-size:46px; line-height:0.95; color:#4a3526; letter-spacing:0.5px;">Proximity</div>
+        <div style="width:64px; height:5px; background:#7fa66a; border-radius:3px; margin:10px auto 14px;"></div>
+        <div style="font-family:'Nunito',sans-serif; font-weight:600; font-size:15px; color:#8a6a4c; margin-bottom:22px;">A cozy little place to work together.</div>
+
+        <div style="text-align:left; font-family:'Pixelify Sans',sans-serif; font-size:14px; letter-spacing:1px; color:#6f4527; margin-bottom:6px;">YOUR NAME</div>
+        <input type="text" maxlength="20" placeholder="traveller" onInput="{{ onNameInput }}"
+               style="width:100%; box-sizing:border-box; background:#fffaf0; border:3px solid #6f4527; border-radius:8px; padding:12px 14px; font-family:'Nunito',sans-serif; font-weight:700; font-size:16px; color:#4a3526; outline:none; box-shadow:inset 0 2px 0 rgba(0,0,0,0.06);" />
+
+        <button type="button" onClick="{{ onJoin }}"
+                style="width:100%; margin-top:18px; border:0; cursor:pointer; padding:14px; border-radius:10px; font-family:'Pixelify Sans',sans-serif; font-size:23px; color:#fff8ec; letter-spacing:0.5px; background:#7fa66a; box-shadow:0 5px 0 #5f8350;"
+                style-active="transform:translateY(2px); box-shadow:0 3px 0 #5f8350;">Enter the Room</button>
+
+        <div style="margin-top:16px; font-family:'Nunito',sans-serif; font-weight:600; font-size:12.5px; color:#a08a6c;">Walk close to people to hear them · move with WASD</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1080,&quot;height&quot;:720},&quot;timeOfDay&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;day&quot;,&quot;evening&quot;],&quot;default&quot;:&quot;day&quot;,&quot;tsType&quot;:&quot;'day' | 'evening'&quot;},&quot;showProximityRing&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;playerShirt&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#4d7d8f&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { screen: 'join', muted: false, name: '' };
+
+  componentDidMount() { this.draw(); }
+  componentDidUpdate() { this.draw(); }
+
+  // ---- small color helper ----
+  shade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (amt >= 0) { r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt; }
+    else { r *= (1 + amt); g *= (1 + amt); b *= (1 + amt); }
+    const h = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+    return '#' + h(r) + h(g) + h(b);
+  }
+
+  drawArt(ctx, art, pal, ox, oy) {
+    for (let y = 0; y < art.length; y++) {
+      const row = art[y];
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x];
+        if (ch === '.' || ch === ' ') continue;
+        const c = pal[ch];
+        if (!c) continue;
+        ctx.fillStyle = c;
+        ctx.fillRect(ox + x, oy + y, 1, 1);
+      }
+    }
+  }
+
+  ellipseShadow(ctx, cx, cy, rx, ry, alpha) {
+    ctx.fillStyle = 'rgba(58,38,22,' + alpha + ')';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  trainer(shirt, cap) {
+    const s = shirt || '#4d7d8f';
+    const c = cap || '#d9614f';
+    return {
+      art: [
+        '......1111......',
+        '....11111111....',
+        '...1111111111...',
+        '..111133311111..',
+        '..111111111111..',
+        '..222222222222..',
+        '...4555555554...',
+        '...4575555754...',
+        '...4555555554...',
+        '....55555555....',
+        '....88888888....',
+        '...8888888888...',
+        '..a8888888888a..',
+        '..588888888885..',
+        '...8888888888...',
+        '...bbbbbbbbbb...',
+        '...bbbb..bbbb...',
+        '...cbbb..bbbc...',
+        '...cbbb..bbbc...',
+        '...cbbb..bbbc...',
+        '...dddd..dddd...',
+        '...eeee..eeee...',
+      ],
+      pal: {
+        '1': c, '2': this.shade(c, -0.22), '3': this.shade(c, 0.3),
+        '4': '#4a3526',
+        '5': '#f1c49c', '6': '#d39e76', '7': '#33271f',
+        '8': s, '9': this.shade(s, -0.2), 'a': this.shade(s, 0.22),
+        'b': '#41506b', 'c': '#33405a',
+        'd': '#5a3d2b', 'e': '#432c1f',
+      },
+    };
+  }
+
+  draw() {
+    const cv = this.sceneEl;
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const TW = 256, TH = 160;
+    const evening = (this.props.timeOfDay ?? 'day') === 'evening';
+    const px = (x, y, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(x | 0, y | 0, w | 0, h | 0); };
+
+    const P = {
+      wallTop: '#efe2c4', wallTopSh: '#e5d4ad',
+      rail: '#9c6a40', railHi: '#b5895a',
+      wainscot: '#8a5a36', wainscotHi: '#9c6a40', wainscotDk: '#6f4527',
+      baseboard: '#5c3a23',
+      plank: '#c2904f', plankHi: '#d2a266', plankDk: '#a9743a', seam: '#8a5d2f', knot: '#9c6a40',
+      rug: '#7fa66a', rugDk: '#6e9459', rugHi: '#93b97f', rugBorder: '#efe2c4', rugAccent: '#cc8d86',
+      deskTop: '#c89b5e', deskTopHi: '#dab277', deskEdge: '#a9743a', deskLeg: '#8a5a36', deskLegDk: '#6f4527',
+      lapBody: '#5b6b78', lapDk: '#44525d', lapHi: '#6f8290',
+      screen: '#bfe6e6', screenDk: '#88c6c9', screenFrame: '#2f3a42', screenLine: '#e9f6ee',
+      chairFrame: '#8a5a36', chairFrameDk: '#6f4527', cushion: '#cc8d86', cushionDk: '#b8746d', cushionHi: '#dba8a2',
+      pot: '#c2714b', potDk: '#a85b39', potHi: '#d4895f', leaf: '#6e9c5a', leafDk: '#588046', leafHi: '#8cbf72',
+      frame: '#8a5a36', frameHi: '#9c6a40',
+      shelf: '#8a5a36', shelfDk: '#6f4527',
+    };
+
+    ctx.clearRect(0, 0, TW, TH);
+
+    // ---------- BACK WALL ----------
+    px(0, 0, TW, 26, P.wallTop);
+    // soft vertical shading on wall
+    for (let x = 0; x < TW; x += 8) { ctx.globalAlpha = 0.05; px(x, 0, 1, 26, '#000'); ctx.globalAlpha = 1; }
+    px(0, 26, TW, 3, P.rail);
+    px(0, 26, TW, 1, P.railHi);
+    // wainscot slats
+    px(0, 29, TW, 13, P.wainscot);
+    for (let x = 0; x < TW; x += 16) { px(x, 29, 1, 13, P.wainscotDk); px(x + 1, 29, 1, 13, P.wainscotHi); }
+    px(0, 41, TW, 1, P.wainscotDk);
+    px(0, 42, TW, 3, P.baseboard);
+
+    // window (left)
+    (() => {
+      const x = 26, y = 5, w = 50, h = 22;
+      px(x - 2, y - 2, w + 4, h + 4, P.frame);
+      px(x - 2, y - 2, w + 4, 1, P.frameHi);
+      const skyTop = evening ? '#f0b27a' : '#bfe0e8';
+      const skyBot = evening ? '#e0888a' : '#9fcad6';
+      px(x, y, w, h, skyTop);
+      px(x, y + h / 2, w, h / 2, skyBot);
+      // sun / moon
+      ctx.fillStyle = evening ? '#f7e7a0' : '#fbf3c8';
+      ctx.beginPath(); ctx.arc(x + 13, y + 8, 5, 0, Math.PI * 2); ctx.fill();
+      // distant hills
+      px(x, y + h - 6, w, 6, evening ? '#7d6a8a' : '#8fae72');
+      px(x, y + h - 3, w, 3, evening ? '#6a5878' : '#7a9b60');
+      // mullions
+      px(x + w / 2 - 1, y, 2, h, P.frame);
+      px(x, y + h / 2 - 1, w, 2, P.frame);
+    })();
+
+    // round clock (center)
+    px(122, 6, 14, 14, P.frame);
+    ctx.fillStyle = '#fbf6e6'; ctx.beginPath(); ctx.arc(129, 13, 6, 0, Math.PI * 2); ctx.fill();
+    px(129, 8, 1, 5, '#4a3526'); px(129, 13, 4, 1, '#4a3526');
+
+    // bookshelf (right)
+    (() => {
+      const x = 178, y = 4, w = 52, h = 38;
+      px(x, y, w, h, P.shelfDk);
+      px(x + 2, y + 2, w - 4, h - 4, P.shelf);
+      const cols = ['#cc8d86', '#7fa66a', '#d9a24f', '#6f8aa8', '#b86f9c', '#5b6b78'];
+      for (let s = 0; s < 3; s++) {
+        const sy = y + 4 + s * 11;
+        px(x + 2, sy + 9, w - 4, 2, P.shelfDk);
+        let bx = x + 4;
+        let ci = s;
+        while (bx < x + w - 5) {
+          const bw = 3 + ((ci * 7 + s * 3) % 3);
+          const bh = 7 + ((ci * 5) % 3);
+          px(bx, sy + (9 - bh), bw, bh, cols[ci % cols.length]);
+          px(bx, sy + (9 - bh), bw, 1, '#ffffff');
+          ctx.globalAlpha = 0.18; px(bx, sy + (9 - bh), 1, bh, '#000'); ctx.globalAlpha = 1;
+          bx += bw + 1; ci++;
+        }
+      }
+    })();
+
+    // ---------- FLOOR ----------
+    px(0, 45, TW, TH - 45, P.plank);
+    let band = 0;
+    for (let y = 45; y < TH; y += 12) {
+      if (band % 2 === 0) { ctx.globalAlpha = 0.18; px(0, y, TW, 12, P.plankHi); ctx.globalAlpha = 1; }
+      px(0, y, TW, 1, P.seam);
+      // staggered plank-end seams
+      const start = (band % 2) ? 0 : 64;
+      for (let x = start; x < TW; x += 128) px(x, y, 1, 12, P.seam);
+      band++;
+    }
+    // a few knots
+    [[40, 70], [150, 110], [205, 88], [90, 140]].forEach(([kx, ky]) => { px(kx, ky, 2, 1, P.knot); px(kx, ky + 1, 1, 1, P.plankDk); });
+
+    // ---------- RUG ----------
+    (() => {
+      const x = 58, y = 90, w = 140, h = 58;
+      ctx.fillStyle = P.rugDk; this.roundRect(ctx, x, y, w, h, 10); ctx.fill();
+      ctx.fillStyle = P.rug; this.roundRect(ctx, x, y + 1, w, h - 2, 9); ctx.fill();
+      ctx.fillStyle = P.rugHi; this.roundRect(ctx, x + 6, y + 5, w - 12, h - 12, 7); ctx.fill();
+      ctx.fillStyle = P.rug; this.roundRect(ctx, x + 12, y + 10, w - 24, h - 22, 5); ctx.fill();
+      // dashed cream border
+      ctx.fillStyle = P.rugBorder;
+      for (let dx = x + 8; dx < x + w - 8; dx += 8) { px(dx, y + 4, 4, 1, P.rugBorder); px(dx, y + h - 5, 4, 1, P.rugBorder); }
+      // center diamond accent
+      ctx.fillStyle = P.rugAccent;
+      ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.rotate(Math.PI / 4); ctx.fillRect(-7, -7, 14, 14); ctx.restore();
+      ctx.fillStyle = P.rug;
+      ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.rotate(Math.PI / 4); ctx.fillRect(-4, -4, 8, 8); ctx.restore();
+    })();
+
+    // ---------- DESK + LAPTOP + CHAIR ----------
+    this.ellipseShadow(ctx, 128, 100, 46, 12, 0.18);
+
+    // desk legs (back pair faintly + front pair)
+    px(100, 86, 5, 16, P.deskLegDk);
+    px(151, 86, 5, 16, P.deskLegDk);
+    // desk top (oblique slab)
+    px(94, 72, 68, 12, P.deskEdge);          // front edge / thickness
+    px(94, 70, 68, 4, P.deskTop);            // top surface back
+    px(94, 70, 68, 2, P.deskTopHi);          // top highlight
+    px(94, 72, 1, 12, P.deskLegDk);
+    px(161, 72, 1, 12, P.deskLegDk);
+    // wood grain on front edge
+    ctx.globalAlpha = 0.15;
+    for (let gx = 98; gx < 160; gx += 9) px(gx, 74, 1, 8, '#000');
+    ctx.globalAlpha = 1;
+
+    // laptop on the desk (screen toward viewer)
+    (() => {
+      const x = 114, baseY = 66;
+      // lid / screen
+      px(x, baseY - 14, 28, 15, P.screenFrame);
+      px(x + 2, baseY - 12, 24, 11, P.screen);
+      // screen glow + code lines
+      ctx.globalAlpha = 0.5; px(x + 2, baseY - 12, 24, 5, P.screenDk); ctx.globalAlpha = 1;
+      const lines = ['#e9f6ee', '#bfe6e6', '#e9f6ee', '#88c6c9'];
+      for (let i = 0; i < 4; i++) { const w = 6 + ((i * 5) % 14); px(x + 4, baseY - 11 + i * 2, w, 1, lines[i]); }
+      // hinge + keyboard base (oblique)
+      px(x - 1, baseY, 30, 2, P.lapDk);
+      px(x - 1, baseY + 2, 30, 3, P.lapBody);
+      px(x - 1, baseY + 2, 30, 1, P.lapHi);
+      px(x + 10, baseY + 5, 8, 1, P.lapDk); // trackpad hint
+    })();
+
+    // a little mug on the desk
+    px(150, 64, 5, 5, '#e7eef0'); px(150, 64, 5, 1, '#c4d2d6'); px(155, 65, 2, 2, '#e7eef0');
+    px(151, 63, 3, 1, '#d8c7a3');
+
+    // chair (in front of desk, showing padded back)
+    (() => {
+      const x = 113, y = 84;
+      this.ellipseShadow(ctx, x + 15, y + 30, 18, 6, 0.16);
+      // legs
+      px(x + 3, y + 18, 3, 12, P.chairFrameDk);
+      px(x + 24, y + 18, 3, 12, P.chairFrameDk);
+      px(x + 6, y + 22, 18, 3, P.chairFrame); // stretcher
+      // seat
+      px(x + 2, y + 14, 26, 6, P.chairFrame);
+      px(x + 2, y + 14, 26, 1, this.shade(P.chairFrame, 0.2));
+      // backrest frame
+      px(x, y - 2, 4, 20, P.chairFrameDk);
+      px(x + 26, y - 2, 4, 20, P.chairFrameDk);
+      px(x, y - 4, 30, 4, P.chairFrame);
+      // cushion
+      px(x + 4, y, 22, 14, P.cushionDk);
+      px(x + 5, y + 1, 20, 12, P.cushion);
+      px(x + 6, y + 2, 18, 3, P.cushionHi);
+      // tufting dots
+      px(x + 11, y + 6, 1, 1, P.cushionDk); px(x + 18, y + 6, 1, 1, P.cushionDk);
+    })();
+
+    // ---------- POTTED PLANT (front-left corner) ----------
+    (() => {
+      const x = 22, y = 118;
+      this.ellipseShadow(ctx, x + 8, y + 22, 12, 5, 0.16);
+      // foliage
+      const L = P.leaf, LD = P.leafDk, LH = P.leafHi;
+      px(x + 2, y - 6, 14, 12, LD);
+      px(x + 3, y - 8, 12, 10, L);
+      px(x + 1, y - 2, 5, 8, L); px(x + 12, y - 2, 5, 8, L);
+      px(x + 5, y - 11, 7, 6, LH);
+      px(x + 4, y - 4, 3, 3, LH); px(x + 11, y - 5, 3, 3, LH);
+      // a couple of leaf tips
+      px(x + 8, y - 13, 2, 3, L); px(x + 2, y - 7, 2, 3, L); px(x + 14, y - 6, 2, 3, L);
+      // pot
+      px(x + 2, y + 6, 14, 4, P.potDk);
+      px(x + 3, y + 9, 12, 9, P.pot);
+      px(x + 3, y + 9, 12, 1, P.potHi);
+      px(x + 4, y + 10, 2, 7, P.potHi);
+    })();
+
+    // ---------- PROXIMITY RING under player ----------
+    if (this.props.showProximityRing ?? true) {
+      ctx.save();
+      ctx.lineWidth = 1;
+      [[40, 16], [30, 12], [20, 8]].forEach(([rx, ry], i) => {
+        ctx.strokeStyle = 'rgba(127,166,106,' + (0.42 - i * 0.06) + ')';
+        ctx.beginPath(); ctx.ellipse(70, 130, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(127,166,106,0.10)';
+      ctx.beginPath(); ctx.ellipse(70, 130, 40, 16, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // ---------- CHARACTERS ----------
+    const drawChar = (footX, footY, shirt, cap) => {
+      this.ellipseShadow(ctx, footX, footY, 9, 4, 0.2);
+      const t = this.trainer(shirt, cap);
+      this.drawArt(ctx, t.art, t.pal, footX - 8, footY - 22);
+    };
+    // peers behind self drawn first
+    drawChar(190, 118, '#7fa66a', '#6f8aa8');   // Marlow (back-right)
+    drawChar(70, 130, this.props.playerShirt ?? '#4d7d8f', '#d9614f'); // self
+    drawChar(150, 150, '#cc8d86', '#d9a24f');   // Sage (front)
+
+    // ---------- LIGHTING OVERLAY ----------
+    if (evening) {
+      ctx.fillStyle = 'rgba(46,30,66,0.26)';
+      ctx.fillRect(0, 0, TW, TH);
+      // warm glow from window + laptop
+      const g1 = ctx.createRadialGradient(50, 16, 4, 50, 16, 70);
+      g1.addColorStop(0, 'rgba(247,200,140,0.32)'); g1.addColorStop(1, 'rgba(247,200,140,0)');
+      ctx.fillStyle = g1; ctx.fillRect(0, 0, TW, TH);
+      const g2 = ctx.createRadialGradient(128, 60, 4, 128, 60, 50);
+      g2.addColorStop(0, 'rgba(160,224,230,0.28)'); g2.addColorStop(1, 'rgba(160,224,230,0)');
+      ctx.fillStyle = g2; ctx.fillRect(0, 0, TW, TH);
+    } else {
+      // gentle daylight from window
+      const g = ctx.createRadialGradient(50, 16, 6, 50, 16, 110);
+      g.addColorStop(0, 'rgba(255,248,224,0.20)'); g.addColorStop(1, 'rgba(255,248,224,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, TW, TH);
+      // soft top vignette warmth
+      ctx.fillStyle = 'rgba(58,38,22,0.05)'; ctx.fillRect(0, TH - 24, TW, 24);
+    }
+  }
+
+  roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  renderVals() {
+    const muted = this.state.muted;
+    const name = this.state.name.trim();
+    return {
+      setSceneCanvas: (el) => { this.sceneEl = el; if (el) this.draw(); },
+      joinDisplay: this.state.screen === 'join' ? 'flex' : 'none',
+      roomDisplay: this.state.screen === 'room' ? 'block' : 'none',
+      onJoin: () => this.setState({ screen: 'room' }),
+      onLeave: () => this.setState({ screen: 'join' }),
+      onNameInput: (e) => this.setState({ name: e.target.value }),
+      onToggleMute: () => this.setState({ muted: !this.state.muted }),
+      muted,
+      micLabel: muted ? 'MUTED' : 'MIC ON',
+      micBg: muted ? '#b9685e' : '#7fa66a',
+      micEdge: muted ? '#8f4a42' : '#5f8350',
+      playerName: name || 'You',
+      roomName: 'Room A',
+      statusText: 'Connected',
+      peopleCount: '3',
+      participants: [
+        { name: (name || 'You') + ' (you)', color: this.props.playerShirt ?? '#4d7d8f', speaking: !muted },
+        { name: 'Marlow', color: '#7fa66a', speaking: true },
+        { name: 'Sage', color: '#cc8d86', speaking: false },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,39 +1,43 @@
-import type { ServerMessage } from '@proximity/shared';
+import type { ServerMessage, Vec2 } from '@proximity/shared';
 import {
-  AVATAR_SIZE,
+  AVATAR_HALF,
   FALLOFF,
   MOVE_SPEED,
   OCCLUSION_PER_WALL,
   POSITION_SYNC_INTERVAL_MS,
   ROOM_NAME,
-  VIEWPORT,
+  SEAT_REACH,
 } from '../config';
 import { defaultMap } from '../world/map';
 import type { AudioEngine } from '../audio/AudioEngine';
 import { ProximityController } from '../audio/ProximityController';
 import { MeshController } from '../rtc/MeshController';
 import { RoomModel } from '../room/RoomModel';
-import { RoomView } from '../room/RoomView';
 import { MovementController } from '../room/MovementController';
+import { CanvasRoomView } from '../render/CanvasRoomView';
 import { ControlBar } from '../ui/ControlBar';
 import type { SignalingClient, SignalingState } from '../signaling/SignalingClient';
 
 export interface ApplicationDeps {
-  readonly root: HTMLElement;
+  readonly stage: HTMLElement;
   readonly name: string;
   readonly localStream: MediaStream;
   readonly audioEngine: AudioEngine;
   readonly signaling: SignalingClient;
+  readonly onLeave: () => void;
 }
 
-/**
- * Post-join composition root. Owns the room model + view, the input/movement
- * loop, the WebRTC mesh, and the proximity→gain bridge, and translates inbound
- * server messages into mutations on those collaborators.
- */
+const STATUS: Record<SignalingState, string> = {
+  connecting: 'Connecting…',
+  reconnecting: 'Reconnecting…',
+  open: 'Connected',
+  closed: 'Offline',
+};
+
+/** Post-join composition root: wires model, canvas view, movement, mesh, audio. */
 export class Application {
   private readonly model: RoomModel;
-  private readonly view: RoomView;
+  private readonly view: CanvasRoomView;
   private readonly movement: MovementController;
   private readonly proximity: ProximityController;
   private readonly mesh: MeshController;
@@ -41,26 +45,35 @@ export class Application {
 
   private running = false;
   private rafId = 0;
+  private lastTime = 0;
   private lastSyncAt = 0;
+  private lastSync: Vec2 = { x: 0, y: 0 };
+  private muted = false;
 
   constructor(private readonly deps: ApplicationDeps) {
     this.model = new RoomModel(deps.name, { ...defaultMap.spawn });
 
-    const viewportElement = document.createElement('div');
-    deps.root.append(viewportElement);
-    this.view = new RoomView(viewportElement, this.model, defaultMap, VIEWPORT, AVATAR_SIZE);
+    this.view = new CanvasRoomView({
+      container: deps.stage,
+      model: this.model,
+      map: defaultMap,
+      audio: deps.audioEngine,
+      isMuted: () => this.muted,
+    });
 
     this.controlBar = new ControlBar();
-    this.controlBar.mount(deps.root);
+    this.controlBar.mount(deps.stage);
     this.controlBar.onToggleMute((muted) => this.setMuted(muted));
+    this.controlBar.onLeave(() => this.deps.onLeave());
 
     this.movement = new MovementController({
       model: this.model,
       bounds: { width: defaultMap.width, height: defaultMap.height },
-      avatarSize: AVATAR_SIZE,
+      half: AVATAR_HALF,
       speed: MOVE_SPEED,
-      // Walls and props both block movement; only walls block audio (below).
-      obstacles: [...defaultMap.walls, ...defaultMap.props],
+      obstacles: defaultMap.walls,
+      seats: defaultMap.seats,
+      seatReach: SEAT_REACH,
     });
     this.proximity = new ProximityController(
       this.model,
@@ -69,17 +82,20 @@ export class Application {
       defaultMap.walls,
       OCCLUSION_PER_WALL,
     );
-
     this.mesh = new MeshController({
       localStream: deps.localStream,
       sendSignal: (to, payload) => deps.signaling.send({ type: 'signal', to, payload }),
       onRemoteStream: (peerId, stream) => deps.audioEngine.addPeer(peerId, stream),
       onPeerRemoved: (peerId) => deps.audioEngine.removePeer(peerId),
     });
+
+    deps.audioEngine.monitorLocal(deps.localStream);
   }
 
   start(): void {
     this.running = true;
+    this.lastTime = performance.now();
+    this.lastSync = { ...this.model.self.position };
     this.movement.attach();
     this.deps.signaling.on('statechange', (state) => this.onStateChange(state));
     this.deps.signaling.on('message', (message) => this.onMessage(message));
@@ -93,40 +109,43 @@ export class Application {
     this.movement.detach();
     this.mesh.reset();
     this.deps.signaling.close();
+    this.controlBar.destroy();
     this.view.destroy();
+    for (const track of this.deps.localStream.getTracks()) track.stop();
+    this.deps.audioEngine.close();
   }
 
   private readonly loop = (time: number): void => {
     if (!this.running) return;
-    const moved = this.movement.step();
-    if (moved && time - this.lastSyncAt >= POSITION_SYNC_INTERVAL_MS) {
-      this.deps.signaling.send({ type: 'move', position: this.model.self.position });
-      this.lastSyncAt = time;
-    }
+    const dt = Math.min(50, time - this.lastTime);
+    this.lastTime = time;
+
+    this.movement.step(dt);
+    this.syncPosition(time);
     this.proximity.update();
+    this.view.render(dt);
+
     this.rafId = requestAnimationFrame(this.loop);
   };
 
+  private syncPosition(time: number): void {
+    const pos = this.model.self.position;
+    if (pos.x === this.lastSync.x && pos.y === this.lastSync.y) return;
+    if (time - this.lastSyncAt < POSITION_SYNC_INTERVAL_MS) return;
+    this.deps.signaling.send({ type: 'move', position: pos });
+    this.lastSync = { ...pos };
+    this.lastSyncAt = time;
+  }
+
   private onStateChange(state: SignalingState): void {
-    switch (state) {
-      case 'open':
-        // (Re)join on every (re)connect — the server replies with a fresh welcome.
-        this.deps.signaling.send({
-          type: 'join',
-          room: ROOM_NAME,
-          name: this.deps.name,
-          position: this.model.self.position,
-        });
-        break;
-      case 'connecting':
-        this.controlBar.setStatus('connecting…');
-        break;
-      case 'reconnecting':
-        this.controlBar.setStatus('reconnecting…');
-        break;
-      case 'closed':
-        this.controlBar.setStatus('disconnected');
-        break;
+    this.controlBar.setStatus(STATUS[state]);
+    if (state === 'open') {
+      this.deps.signaling.send({
+        type: 'join',
+        room: ROOM_NAME,
+        name: this.deps.name,
+        position: this.model.self.position,
+      });
     }
   }
 
@@ -140,17 +159,14 @@ export class Application {
           this.model.addPeer(peer);
           this.mesh.ensurePeer(peer.id);
         }
-        this.updatePresence();
         break;
       case 'peer-joined':
         this.model.addPeer(message.peer);
         this.mesh.ensurePeer(message.peer.id);
-        this.updatePresence();
         break;
       case 'peer-left':
         this.model.removePeer(message.id);
         this.mesh.removePeer(message.id);
-        this.updatePresence();
         break;
       case 'peer-moved':
         this.model.setPeerPosition(message.id, message.position);
@@ -161,16 +177,8 @@ export class Application {
     }
   }
 
-  private updatePresence(): void {
-    const count = [...this.model.peers()].length;
-    this.controlBar.setStatus(
-      count === 0 ? 'connected — you are alone' : `connected — ${count} ${count === 1 ? 'other' : 'others'}`,
-    );
-  }
-
   private setMuted(muted: boolean): void {
-    for (const track of this.deps.localStream.getAudioTracks()) {
-      track.enabled = !muted;
-    }
+    this.muted = muted;
+    for (const track of this.deps.localStream.getAudioTracks()) track.enabled = !muted;
   }
 }

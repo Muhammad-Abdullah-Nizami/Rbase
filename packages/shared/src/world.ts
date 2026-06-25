@@ -42,6 +42,8 @@ export const worldMapSchema = z.object({
   walls: z.array(rectSchema),
   /** Cosmetic objects — no audio/movement effect. */
   props: z.array(propSchema).default([]),
+  /** Seats you can sit at (press E when close). */
+  seats: z.array(vec2Schema).default([]),
   rooms: z.array(roomLabelSchema).default([]),
 });
 export type WorldMap = z.infer<typeof worldMapSchema>;

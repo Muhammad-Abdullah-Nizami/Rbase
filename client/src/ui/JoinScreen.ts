@@ -11,16 +11,18 @@ export class JoinScreen {
     this.element.className = 'join';
     this.element.innerHTML = `
       <div class="card">
-        <h1>Proximity Room</h1>
-        <p class="muted">Walk close to people to hear them.</p>
-        <input class="input" type="text" maxlength="24" placeholder="Your name" autocomplete="off" />
-        <button class="button" type="button">Join Room</button>
-        <p class="error" hidden></p>
-        <p class="hint">Move with arrow keys or WASD.</p>
+        <div class="title">Proximity</div>
+        <div class="title-underline"></div>
+        <div class="subtitle">A cozy little place to work together.</div>
+        <div class="field-label">YOUR NAME</div>
+        <input class="name-input" type="text" maxlength="20" placeholder="traveller" autocomplete="off" />
+        <button class="enter" type="button">Enter the Space</button>
+        <div class="error" hidden></div>
+        <div class="foot">Walk close to people to hear them · move with WASD</div>
       </div>`;
 
-    this.input = this.element.querySelector<HTMLInputElement>('.input')!;
-    this.button = this.element.querySelector<HTMLButtonElement>('.button')!;
+    this.input = this.element.querySelector<HTMLInputElement>('.name-input')!;
+    this.button = this.element.querySelector<HTMLButtonElement>('.enter')!;
     this.error = this.element.querySelector<HTMLElement>('.error')!;
 
     this.button.addEventListener('click', () => this.submit());
@@ -38,7 +40,7 @@ export class JoinScreen {
 
   setBusy(busy: boolean): void {
     this.button.disabled = busy;
-    this.button.textContent = busy ? 'Joining…' : 'Join Room';
+    this.button.textContent = busy ? 'Entering…' : 'Enter the Space';
   }
 
   showError(message: string): void {
@@ -47,8 +49,14 @@ export class JoinScreen {
     this.setBusy(false);
   }
 
-  remove(): void {
-    this.element.remove();
+  show(): void {
+    this.element.hidden = false;
+    this.setBusy(false);
+    this.input.focus();
+  }
+
+  hide(): void {
+    this.element.hidden = true;
   }
 
   private submit(): void {

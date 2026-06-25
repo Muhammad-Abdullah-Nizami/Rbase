@@ -8,7 +8,12 @@ import { Application } from './app/Application';
 const root = document.getElementById('root');
 if (!root) throw new Error('missing #root element');
 
-const joinScreen = new JoinScreen(root);
+const stage = document.createElement('div');
+stage.className = 'stage';
+root.append(stage);
+
+const joinScreen = new JoinScreen(stage);
+let app: Application | null = null;
 
 joinScreen.onJoin(async (name) => {
   joinScreen.setBusy(true);
@@ -29,9 +34,20 @@ joinScreen.onJoin(async (name) => {
     // Some browsers resume lazily on first output — not fatal.
   }
 
-  joinScreen.remove();
-
   const signaling = new SignalingClient({ url: SIGNALING_URL });
-  const app = new Application({ root, name, localStream, audioEngine, signaling });
+  joinScreen.hide();
+
+  app = new Application({
+    stage,
+    name,
+    localStream,
+    audioEngine,
+    signaling,
+    onLeave: () => {
+      app?.stop();
+      app = null;
+      joinScreen.show();
+    },
+  });
   app.start();
 });
