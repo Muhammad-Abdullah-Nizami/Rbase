@@ -59,7 +59,8 @@ export class Application {
       bounds: { width: defaultMap.width, height: defaultMap.height },
       avatarSize: AVATAR_SIZE,
       speed: MOVE_SPEED,
-      walls: defaultMap.walls,
+      // Walls and props both block movement; only walls block audio (below).
+      obstacles: [...defaultMap.walls, ...defaultMap.props],
     });
     this.proximity = new ProximityController(
       this.model,

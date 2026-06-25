@@ -17,14 +17,15 @@ export interface MovementControllerOptions {
   readonly bounds: Bounds;
   readonly avatarSize: number;
   readonly speed: number;
-  readonly walls: readonly Rect[];
+  /** Solid rectangles that block movement (walls AND props like the table). */
+  readonly obstacles: readonly Rect[];
 }
 
 /**
  * Translates held movement keys into per-tick motion of the local avatar,
- * clamped to the world and blocked by walls. When a diagonal/colliding move is
- * rejected, it retries each axis alone so you slide along walls instead of
- * sticking.
+ * clamped to the world and blocked by obstacles (walls and solid props). When a
+ * diagonal/colliding move is rejected, it retries each axis alone so you slide
+ * along an obstacle instead of sticking.
  */
 export class MovementController {
   private readonly pressed = new Set<string>();
@@ -67,7 +68,7 @@ export class MovementController {
     }
     if (dx === 0 && dy === 0) return false;
 
-    const { bounds, avatarSize, speed, walls } = this.options;
+    const { bounds, avatarSize, speed, obstacles } = this.options;
     const current = this.options.model.self.position;
     const stepX = dx * speed;
     const stepY = dy * speed;
@@ -75,8 +76,8 @@ export class MovementController {
     const tryMove = (x: number, y: number): Vec2 | null => {
       const clamped = clampToBounds({ x, y }, bounds, avatarSize);
       const box: Rect = { x: clamped.x, y: clamped.y, width: avatarSize, height: avatarSize };
-      for (const wall of walls) {
-        if (rectsOverlap(box, wall)) return null;
+      for (const obstacle of obstacles) {
+        if (rectsOverlap(box, obstacle)) return null;
       }
       return clamped;
     };
